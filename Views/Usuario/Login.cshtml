@@ -1,0 +1,44 @@
+@model MiProyecto.Models.LoginView
+@{
+    ViewData["Title"] = "Iniciar Sesion";
+  
+}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3 class="text-center">Acceso requerido</h3>
+                </div>
+                <div class="card-body">
+                    @if (ViewData.ModelState[""]?.Errors.Count > 0)
+                    {
+                        <div class="alert alert-danger">
+                            <i class="fas fa-exclamation-circle"></i> @ViewData.ModelState[""].Errors.First().ErrorMessage
+                        </div>
+                    }
+                    
+                    <form asp-controller="Usuario" asp-action="Login" method="post">
+                        <input type="hidden" name="returnUrl" value="@Context.Request.Query["returnUrl"]" />
+                        
+                        <div class="form-group">
+                            <label asp-for="Usuario" class="control-label">Email</label>
+                            <input asp-for="Usuario" class="form-control" required />
+                            <span asp-validation-for="Usuario" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label asp-for="Clave" class="control-label">Contraseña</label>
+                            <input asp-for="Clave" type="password" class="form-control" required />
+                            <span asp-validation-for="Clave" class="text-danger"></span>
+                        </div>
+                        
+                        <div class="form-group mt-3">
+                            <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div> 

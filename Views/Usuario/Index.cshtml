@@ -1,0 +1,107 @@
+@model IEnumerable<MiProyecto.Models.Usuario>
+
+@{
+    ViewData["Title"] = "Listado de Usuarios";
+}
+
+@{
+    ViewData["Title"] = "Listado de Usuarios";
+    var rnd = new Random();
+    var claseAnterior = ViewBag.PaginaActual <= 1 ? "btn btn-secondary disabled" : "btn btn-secondary";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-users"></i> @ViewData["Title"]</h1>
+    <a asp-action="Create" class="btn btn-success">
+        <i class="fas fa-plus-circle"></i> Crear Nuevo Usuario
+    </a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-hover">
+        <thead class="thead-dark">
+            <tr>
+                <th>@Html.DisplayNameFor(model => model.Nombre)</th>
+                <th>@Html.DisplayNameFor(model => model.Apellido)</th>
+                <th>@Html.DisplayNameFor(model => model.Email)</th>
+                <th>@Html.DisplayNameFor(model => model.Avatar)</th>
+                <th>@Html.DisplayNameFor(model => model.Rol)</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@Html.DisplayFor(modelItem => item.Nombre)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Apellido)</td>
+                    <td>@Html.DisplayFor(modelItem => item.Email)</td>
+                    <td>
+                        @if(!String.IsNullOrEmpty(item.Avatar)) 
+                        {
+                            var x = item.Avatar + "?" + rnd.Next();
+                            <img width="32" src="@x" class="rounded-circle" />
+                        }
+                        else 
+                        {
+                            <span class="text-muted">Sin foto</span>
+                        }
+                    </td>
+                    <td>@Html.DisplayFor(modelItem => item.Rol)</td>
+                    <td class="text-center">
+                        <div class="btn-group" role="group">
+                            <a asp-action="Edit" asp-route-id="@item.IdUsuario" 
+                               class="btn btn-sm btn-primary" title="Editar">
+                                <i class="fas fa-edit"></i> Editar
+                            </a>
+                          <form asp-action="Eliminar" method="post" class="d-inline" id="delete-form-@item.IdUsuario">
+                                <input type="hidden" name="id" value="@item.IdUsuario" />
+                                <button type="button" class="btn btn-sm btn-danger" title="Eliminar"
+                                        onclick="confirmDelete(@item.IdUsuario)">
+                                    <i class="fas fa-trash-alt"></i> Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+<div class="d-flex justify-content-between mt-4">
+    <a asp-action="Index" asp-route-pagina="@(ViewBag.PaginaActual - 1)" 
+       class="@claseAnterior">
+        <i class="fas fa-arrow-left"></i> Anterior
+    </a>
+    
+    <span class="text-muted">Página @ViewBag.PaginaActual</span>
+    
+    <a asp-action="Index" asp-route-pagina="@(ViewBag.PaginaActual + 1)" 
+       class="btn btn-secondary">
+        Siguiente <i class="fas fa-arrow-right"></i>
+    </a>
+</div>
+
+@section Scripts {
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+    
+    <script>
+      async function confirmDelete(id) {
+            const result = await Swal.fire({
+                title: 'Confirmar',
+                text: '¿Está seguro que desea eliminar este usuario?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sí',
+                cancelButtonText: 'No'
+            });
+
+            if (result.isConfirmed) {
+                document.getElementById(`delete-form-${id}`).submit();
+            }
+        }
+    </script>
+}

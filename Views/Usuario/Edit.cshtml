@@ -1,0 +1,227 @@
+@model MiProyecto.Models.Usuario
+
+@{
+    ViewData["Title"] = "Editar";
+}
+
+
+<h1>@ViewData["Title"]</h1>
+
+<h4>Usuario</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Edit" method="post" enctype="multipart/form-data" id="usuarioForm">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="IdUsuario" />
+            
+            <div class="form-group">
+                <label asp-for="Nombre" class="control-label"></label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div>
+            
+            <div class="form-group">
+                <label asp-for="Apellido" class="control-label"></label>
+                <input asp-for="Apellido" class="form-control" />
+                <span asp-validation-for="Apellido" class="text-danger"></span>
+            </div>
+            
+            <div class="form-group">
+                <label asp-for="Email" class="control-label"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+            
+         @if (User.IsInRole("Administrador"))
+            {
+                <div class="form-group">
+                    <label class="control-label">Rol</label>
+                    <select class="form-control" asp-for="Rol">
+                        @if (ViewBag.Roles != null)
+                        {
+                            @foreach (var role in ViewBag.Roles as List<string>)
+                            {
+                                <option value="@role" selected="@(role == Model.Rol)">@role</option>
+                            }
+                        }
+                        else
+                        {
+                            <option value="Administrador" selected="@("Administrador" == Model.Rol)">Administrador</option>
+                            <option value="Usuario" selected="@("Usuario" == Model.Rol)">Usuario</option>
+                        }
+                    </select>
+                    <span asp-validation-for="Rol" class="text-danger"></span>
+                </div>
+            }
+            
+            <div class="form-group">
+                <label class="control-label">Avatar Actual</label><br />
+                @if (!string.IsNullOrEmpty(Model.Avatar))
+                {
+                    <div class="avatar-container">
+                        <img src="@Model.Avatar.Replace("\\", "/")" style="max-width: 200px; max-height: 200px;" class="img-thumbnail" id="avatarPreview" />
+                        <div class="mt-2 form-check">
+                            <input class="form-check-input" type="checkbox" id="eliminarAvatar" name="EliminarAvatar" value="true">
+                            <label class="form-check-label" for="eliminarAvatar">
+                                Eliminar avatar actual
+                            </label>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No hay avatar asignado</p>
+                }
+            </div>
+            
+            <div class="form-group">
+                <label class="control-label">Cambiar Avatar</label>
+                <input type="file" name="AvatarFile" class="form-control" accept=".jpg,.jpeg,.png,.gif" />
+                <small class="form-text text-muted">Formatos aceptados: .jpg, .png, .gif</small>
+            </div>
+            
+            <div class="form-group mt-4">
+                <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#cambiarClaveModal">
+                    Cambiar Contraseña
+                </button>
+                <a asp-action="Index" class="btn btn-secondary">Volver al Listado</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="modal fade" id="cambiarClaveModal" tabindex="-1" aria-labelledby="cambiarClaveModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cambiarClaveModalLabel">Cambiar Contraseña</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formCambiarClave">
+                    <input type="hidden" id="userId" value="@Model.IdUsuario" />
+                    <div class="form-group">
+                        <label for="claveActual">Contraseña Actual</label>
+                        <input type="password" class="form-control" id="claveActual" required>
+                        <div class="invalid-feedback">La contraseña actual es incorrecta</div>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="nuevaClave">Nueva Contraseña</label>
+                        <input type="password" class="form-control" id="nuevaClave" required minlength="3">
+                        <div class="invalid-feedback">La contraseña debe tener al menos 3 caracteres</div>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="confirmarClave">Confirmar Nueva Contraseña</label>
+                        <input type="password" class="form-control" id="confirmarClave" required>
+                        <div class="invalid-feedback">Las contraseñas no coinciden</div>
+                    </div>
+                </form>
+                <div id="passwordChangeResult" class="mt-3"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-primary" id="confirmarCambioClave">Confirmar Cambio</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    
+    <script>
+        document.getElementById('eliminarAvatar')?.addEventListener('change', function() {
+            const avatarPreview = document.getElementById('avatarPreview');
+            if (avatarPreview) {
+                if (this.checked) {
+                    avatarPreview.style.opacity = '0.5';
+                    avatarPreview.style.border = '2px solid red';
+                } else {
+                    avatarPreview.style.opacity = '1';
+                    avatarPreview.style.border = '';
+                }
+            }
+        });
+
+        document.getElementById('confirmarCambioClave').addEventListener('click', function() {
+            const form = document.getElementById('formCambiarClave');
+            const claveActual = document.getElementById('claveActual');
+            const nuevaClave = document.getElementById('nuevaClave');
+            const confirmarClave = document.getElementById('confirmarClave');
+            const userId = document.getElementById('userId').value;
+            const resultDiv = document.getElementById('passwordChangeResult');
+            
+            form.classList.remove('was-validated');
+            claveActual.classList.remove('is-invalid');
+            nuevaClave.classList.remove('is-invalid');
+            confirmarClave.classList.remove('is-invalid');
+            resultDiv.innerHTML = '';
+            resultDiv.className = 'mt-3';
+            
+            let isValid = true;
+            
+            if (!claveActual.value) {
+                claveActual.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!nuevaClave.value || nuevaClave.value.length < 3) {
+                nuevaClave.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (nuevaClave.value !== confirmarClave.value) {
+                confirmarClave.classList.add('is-invalid');
+                isValid = false;
+            }
+            
+            if (!isValid) {
+                form.classList.add('was-validated');
+                return;
+            }
+            
+            const data = {
+                id: userId,
+                currentPassword: claveActual.value,
+                newPassword: nuevaClave.value,
+                confirmPassword: confirmarClave.value
+            };
+            
+            fetch('@Url.Action("ChangePassword", "Usuario")', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Error en la respuesta del servidor');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    resultDiv.innerHTML = '<div class="alert alert-success">Contraseña cambiada exitosamente</div>';
+                    setTimeout(() => {
+                        form.reset();
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('cambiarClaveModal'));
+                        modal.hide();
+                    }, 2000);
+                } else {
+                    resultDiv.innerHTML = `<div class="alert alert-danger">${data.message || 'Error al cambiar la contraseña'}</div>`;
+                    if (data.errorField) {
+                        document.getElementById(data.errorField).classList.add('is-invalid');
+                    }
+                }
+            })
+            .catch(error => {
+                resultDiv.innerHTML = '<div class="alert alert-danger">Error al comunicarse con el servidor</div>';
+                console.error('Error:', error);
+            });
+        });
+    </script>
+}

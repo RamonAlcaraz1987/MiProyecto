@@ -8,6 +8,7 @@ namespace MiProyecto.Controllers;
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly IRepositorioCarta car;
 
     public HomeController(ILogger<HomeController> logger)
     {
@@ -15,8 +16,9 @@ public class HomeController : Controller
     }
 
     public IActionResult Index()
-    {
-        return View();
+    {   
+        var cartas = car.ObtenerTodos();
+        return View(cartas);
     }
 
     public IActionResult Privacy()
@@ -28,5 +30,9 @@ public class HomeController : Controller
     public IActionResult Error()
     {
         return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+    }
+     public IActionResult Restringido()
+    {
+        return View();
     }
 }

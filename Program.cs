@@ -1,7 +1,27 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using MiProyecto.Models;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
+    {
+        options.LoginPath = "/Usuario/Login";
+        options.LogoutPath = "/Usuario/Logout";
+        options.AccessDeniedPath = "/Home/Restringido";
+        options.ExpireTimeSpan = TimeSpan.FromMinutes(30);
+    });
+
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("Administrador", policy => policy.RequireClaim(ClaimTypes.Role, "Administrador"));
+});
+
+builder.Services.AddTransient<IRepositorioUsuario, RepositorioUsuario>();
+builder.Services.AddTransient<IRepositorioCarta, RepositorioCarta>();
 
 var app = builder.Build();
 
@@ -17,7 +37,7 @@ app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();
-
+app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllerRoute(
