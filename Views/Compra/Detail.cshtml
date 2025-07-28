@@ -1,0 +1,85 @@
+@model MiProyecto.Models.Compra
+
+@{
+    ViewData["Title"] = "Detalles de la Compra";
+    var rnd = new Random();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-info-circle"></i> @ViewData["Title"]</h1>
+    <a asp-action="Index" asp-route-pagina="@ViewBag.PaginaActual" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Volver al Listado
+    </a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">
+        <h5 class="mb-0">Información de la Compra</h5>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.IdCompra)</dt>
+            <dd class="col-sm-9">@Model.IdCompra</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Pack.Nombre)</dt>
+            <dd class="col-sm-9">@Model.Pack.Nombre</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Usuario.DNI)</dt>
+            <dd class="col-sm-9">@Model.Usuario.DNI (@Model.Usuario.Nombre @Model.Usuario.Apellido)</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Fecha)</dt>
+            <dd class="col-sm-9">@Model.Fecha.ToString("dd/MM/yyyy HH:mm")</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Estado)</dt>
+            <dd class="col-sm-9">
+                @if(Model.Estado == 1)
+                {
+                    <span class="badge bg-success">Activa</span>
+                }
+                else
+                {
+                    <span class="badge bg-danger">Cancelada</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">Cantidad de Cartas</dt>
+            <dd class="col-sm-9">@Model.Cartas.Count</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">Cartas de la Compra</h5>
+    </div>
+    <div class="card-body">
+        @if(Model.Cartas.Any())
+        {
+            <div class="d-flex flex-wrap">
+                @foreach (var carta in Model.Cartas)
+                {
+                    <div class="card m-1" style="width: 120px;">
+                        <div class="card-body p-1 text-center">
+                            @if(!string.IsNullOrEmpty(carta.Imagen))
+                            {
+                                var x = carta.Imagen + "?" + rnd.Next();
+                                <img src="@x" class="img-fluid" style="max-height: 80px;" alt="Carta de Pokémon" />
+                            }
+                            else
+                            {
+                                <span class="badge bg-danger">Sin Imagen</span>
+                            }
+                            <p class="card-text small mt-1">@carta.Nombre</p>
+                            <p class="card-text small text-muted">@carta.Categoria.Nombre</p>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted">No hay cartas en esta compra.</p>
+        }
+    </div>
+</div>
+

@@ -7,11 +7,15 @@
 
 <h1>@ViewData["Title"]</h1>
 
+
+
 <div class="row">
     <div class="col-md-4">
         <form asp-action="Perfil" method="post" enctype="multipart/form-data" id="perfilForm">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="IdUsuario" />
+            <input type="hidden" asp-for="DNI" />
+            <input type="hidden" asp-for="PuntosVirtuales" />
             
             <div class="form-group mb-3">
                 <label class="form-label">Nombre completo</label>
@@ -23,17 +27,22 @@
                 <input class="form-control" value="@Model.Email" readonly />
             </div>
             
-           <div class="form-group mb-3">
-            <label class="form-label">Puntos Virtuales</label>
-            <input class="form-control" value="@Model.PuntosVirtuales" readonly />
-        </div>
+           <div class="form-group mb-3 d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <label class="form-label">Puntos Virtuales</label>
+                    <input class="form-control" value="@Model.PuntosVirtuales" readonly />
+                </div>
+                <button type="button" class="btn btn-success ms-3" data-bs-toggle="modal" data-bs-target="#comprarPuntosModal">
+                    Comprar Puntos
+                </button>
+            </div>
             
             <div class="form-group mb-3">
                 <label class="control-label">Avatar Actual</label><br />
                 @if (!string.IsNullOrEmpty(Model.Avatar))
                 {
                     <div class="avatar-container">
-                        <img src="@Model.Avatar.Replace("\\", "/")" style="max-width: 200px; max-height: 200px;" class="img-thumbnail" id="avatarPreview" />
+                        <img src="@Model.Avatar.Replace("\\", "/")?v=@DateTime.Now.Ticks" style="max-width: 200px; max-height: 200px;" class="img-thumbnail" id="avatarPreview" />
                         <div class="mt-2 form-check">
                             <input class="form-check-input" type="checkbox" id="eliminarAvatar" name="EliminarAvatar" value="true">
                             <label class="form-check-label" for="eliminarAvatar">
@@ -99,6 +108,32 @@
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="comprarPuntosModal" tabindex="-1" aria-labelledby="comprarPuntosModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm modal-dialog-right">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-primary" id="comprarPuntosModalLabel">Mercados Créditos</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form asp-action="ComprarPuntos" method="post" id="formComprarPuntos">
+                    <input type="hidden" name="idUsuario" value="@Model.IdUsuario" />
+                    <div class="form-group">
+                        <label for="cantidad">Cantidad de Puntos</label>
+                        <input type="number" class="form-control" id="cantidad" name="cantidad" required min="1" placeholder="Ingrese cantidad">
+                        <div class="invalid-feedback">Por favor, ingrese una cantidad válida (mínimo 1)</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="submit" class="btn btn-primary" form="formComprarPuntos">Cargar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 @section Scripts {
     @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
@@ -194,6 +229,20 @@
                 resultDiv.innerHTML = '<div class="alert alert-danger">Error al comunicarse con el servidor</div>';
                 console.error('Error:', error);
             });
+        });
+
+        document.getElementById('formComprarPuntos').addEventListener('submit', function(e) {
+            const form = this;
+            const cantidad = document.getElementById('cantidad');
+            
+            form.classList.remove('was-validated');
+            cantidad.classList.remove('is-invalid');
+            
+            if (!cantidad.value || cantidad.value < 1) {
+                cantidad.classList.add('is-invalid');
+                form.classList.add('was-validated');
+                e.preventDefault();
+            }
         });
     </script>
 }

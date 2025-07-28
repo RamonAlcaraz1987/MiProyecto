@@ -1,0 +1,59 @@
+@model IEnumerable<MiProyecto.Models.Pack>
+
+@{
+    ViewData["Title"] = "Gestion de Packs";
+   
+}
+
+<h2>Gestion de Packs</h2>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Precio</th>
+            <th>Total Cartas</th>
+            <th>Rara Chance</th>
+            <th>Epica Chance</th>
+            <th>Legendaria Chance</th>
+            <th>Rara Gar</th>
+            <th>Epica Gar</th>
+            <th>Leg Gar</th>
+            <th>Leyenda</th>
+            <th>Imagen</th>
+            <th>Acciones</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var pack in Model)
+        {
+            <tr>
+                <td>@pack.IdPack</td>
+                <td>@pack.Nombre</td>
+                <td>@pack.Precio</td>
+                <td>@pack.TotalCartas</td>
+                <td>@pack.RaraChance</td>
+                <td>@pack.EpicaChance</td>
+                <td>@pack.LegendariaChance</td>
+                <td>@pack.RaraGar</td>
+                <td>@pack.EpicaGar</td>
+                <td>@pack.LegGar</td>
+                <td>@pack.Leyenda</td>
+                <td>
+                    @if (!string.IsNullOrEmpty(pack.Imagen))
+                    {
+                        <img src="@pack.Imagen" alt="@pack.Nombre" style="max-width: 100px;" />
+                    }
+                    else
+                    {
+                        <span>Sin imagen</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Edit" asp-route-id="@pack.IdPack" class="btn btn-sm btn-warning">Editar</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

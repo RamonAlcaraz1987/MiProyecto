@@ -10,14 +10,16 @@ public class HomeController : Controller
     private readonly ILogger<HomeController> _logger;
     private readonly IRepositorioCarta car;
 
-    public HomeController(ILogger<HomeController> logger)
+    
+    public HomeController(ILogger<HomeController> logger, IRepositorioCarta repositorioCarta)
     {
         _logger = logger;
+        car = repositorioCarta;
     }
 
-    public IActionResult Index()
+    public IActionResult Index(int pagina=1, int tamPagina=10)
     {   
-        var cartas = car.ObtenerTodos();
+        var cartas = car.ObtenerPortada();
         return View(cartas);
     }
 

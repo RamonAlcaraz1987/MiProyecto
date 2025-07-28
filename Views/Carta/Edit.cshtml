@@ -1,0 +1,129 @@
+@model MiProyecto.Models.Carta
+
+@{
+    ViewData["Title"] = "Editar Carta";
+    var tipos = ViewBag.Tipos;
+    var categorias = ViewBag.Categorias;
+    var rnd = new Random();
+}
+
+<div class=" container">
+
+    <h2><i class="fas fa-edit"></i> @ViewData["Title"]</h2>
+    <div asp-validation-summary="All" class="text-danger"></div>
+    <input type="hidden" name="pagina" value="@ViewBag.PaginaActual" />
+    <div class="row">
+            <div class="col-md-6">
+            <form asp-action="Edit" asp-controller="Carta" method="post" enctype="multipart/form-data"novalidate>
+                <input type="hidden" asp-for="IdCarta" />
+                <div class="form-group mb-3">
+                    <label asp-for="Nombre">Nombre</label>
+                    <input asp-for="Nombre" class="form-control" value ="@Model.Nombre" />
+                    <span asp-validation-for="Nombre" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-3">
+                    <label asp-for="IdCategoria">Categoría</label>
+                    <select asp-for="IdCategoria" class="form-control">
+                        <option value="" disabled selected>Seleccione una categoría</option>
+                        @foreach (var categoria in categorias)
+                        {
+                            if (Model.IdCategoria == categoria.IdCategoria)
+                            {
+                                <option value="@categoria.IdCategoria" selected>@categoria.Nombre</option>
+                            }
+                            else
+                            {
+                                <option value="@categoria.IdCategoria">@categoria.Nombre</option>
+                            }
+                        }
+                        }
+                    </select>
+                    <span asp-validation-for="IdCategoria" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-3">
+                    <label asp-for="IdTipo1">Tipo Principal</label>
+                    <select asp-for="IdTipo1" class="form-control">
+                        <option value="" disabled selected>Seleccione un tipo</option>
+                        @foreach (var tipo in tipos)
+                        {
+                          if (Model.IdTipo1 == tipo.IdTipo)
+                            {
+                                <option value="@tipo.IdTipo" selected>@tipo.Descripcion</option>
+                            }
+                            else
+                            {
+                                <option value="@tipo.IdTipo">@tipo.Descripcion</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="IdTipo1" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-3">
+                    <label asp-for="IdTipo2">Tipo Secundario</label>
+                    <select asp-for="IdTipo2" class="form-control">
+                        <option value="0" selected>Seleccione un tipo</option>
+                        @foreach (var tipo in tipos)
+                        {
+                            if (Model.IdTipo2 == tipo.IdTipo)
+                            {
+                                <option value="@tipo.IdTipo" selected>@tipo.Descripcion</option>
+                            }
+                            else
+                            {
+                                <option value="@tipo.IdTipo">@tipo.Descripcion</option>
+                            }
+                        }
+                    </select>
+                    <span asp-validation-for="IdTipo2" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-3">
+                    <label asp-for="ValorEstimado">Precio</label>
+                    <input asp-for="ValorEstimado" class="form-control" value="@Model.ValorEstimado" type="number"/>
+                    <span asp-validation-for="ValorEstimado" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-3">
+                    <label asp-for="ImagenFile">Imagen</label>
+                    <input asp-for="ImagenFile" type="file" class="form-control-file" data-val="false" />
+                    <span asp-validation-for="ImagenFile" class="text-danger"></span>
+                </div>
+                <div class="form-group mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="EliminarImagen" name="EliminarImagen" />
+                    <label class="form-check-label" for="EliminarImagen">Eliminar Imagen</label>
+                </div>
+                <div class="form-group mb-3">
+                    <label asp-for="Estado">Estado</label> 
+                    <select asp-for="Estado" class="form-control">
+                        <option value="1">Activa</option>
+                        <option value="2">Desactivada</option>
+                    </select>
+                <span asp-validation-for="Estado" class="text-danger"></span>
+                </div>  
+                <div class="form-group mb-3">
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-edit"></i> Editar</button>
+                    <a asp-action="Index" asp-route-pagina="@ViewBag.PaginaActual" class="btn btn-danger"><i class="fas fa-times"></i> Cancelar</a>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-md-6 d-flex align-items-start justify-content-center">
+            <div class="text-center">
+                @if(!String.IsNullOrEmpty(Model.Imagen))
+                {
+
+                    var x = Model.Imagen + "?" + rnd.Next();
+                    <img src="@x" class="pokemon-card img-fluid" alt="Carta de Pokémon" style="width: 400px; height: 560px;" />
+                }
+                else
+                {
+                    <div class="text-center">
+                        <span class="badge bg-danger">Sin Imagen</span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>  
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

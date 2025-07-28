@@ -1,0 +1,69 @@
+@model MiProyecto.Models.Coleccion
+@{
+    ViewData["Title"] = "Detalles de la Colección";
+    var coleccion = ViewBag.Coleccion as Coleccion;
+    var cartasConConteo = ViewBag.CartasConConteo as List<(Carta Carta, int Cantidad)>;
+    var rnd = new Random();
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Colección: @coleccion.Nombre</h2>
+    <p>Usuario: @coleccion.Usuario.Nombre @coleccion.Usuario.Apellido</p>
+    <p>Pública: @(coleccion.EsPublica == 1 ? "Sí" : "No")</p>
+    <p>Estado: @(coleccion.Estado == 1 ? "Activa" : "Inactiva")</p>
+    <p>Total Cartas: @coleccion.Cartas.Count</p>
+
+    <div class="row row-cols-1 row-cols-md-5 g-3">
+        @if (cartasConConteo != null && cartasConConteo.Any())
+        {
+            @foreach (var item in cartasConConteo)
+            {
+                <div class="col">
+                    <div class="card text-center h-100">
+                        @if (!string.IsNullOrEmpty(item.Carta.Imagen))
+                        {
+                            var x = item.Carta.Imagen + "?" + rnd.Next();
+                            <img src="@x" alt="Carta" class="img-fluid" style="width: 240px; height: 336px;" />
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">Sin Imagen</span>
+                        }
+                        <p class="card-text small mt-1">@item.Carta.Nombre @(item.Cantidad > 1 ? $"x{item.Cantidad}" : "")</p>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted">No hay cartas en esta colección.</p>
+        }
+    </div>
+
+    <div class="d-flex justify-content-between mt-4">
+        <a asp-action="Index" asp-route-pagina="@ViewBag.PaginaActual" class="btn btn-primary">
+            <i class="fas fa-arrow-left"></i> Volver
+        </a>
+        <div class="pagination">
+            @for (int i = 1; i <= ViewBag.TotalPaginas; i++)
+            {
+                if (i == ViewBag.PaginaActual)
+                {
+                    <span class="btn btn-primary disabled mx-1">@i</span>
+                }
+                else
+                {
+                    <a asp-action="Detail" asp-route-id="@coleccion.IdColeccion" asp-route-pagina="@i" class="btn btn-secondary mx-1">@i</a>
+                }
+            }
+        </div>
+        <a asp-action="Detail" asp-route-id="@coleccion.IdColeccion" asp-route-pagina="@(ViewBag.PaginaActual + 1)"
+           class="@(ViewBag.PaginaActual >= ViewBag.TotalPaginas ? "btn btn-secondary disabled" : "btn btn-secondary")">
+            Siguiente <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

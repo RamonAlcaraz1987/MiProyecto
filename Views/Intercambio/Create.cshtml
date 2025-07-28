@@ -1,0 +1,577 @@
+@model MiProyecto.Models.IntercambioViewModel
+@{
+    ViewData["Title"] = "Crear Intercambio";
+    var coleccionPropia = ViewBag.ColeccionPropia as MiProyecto.Models.Coleccion;
+    var coleccionesPublicas = ViewBag.ColeccionesPublicas as List<MiProyecto.Models.Coleccion>;
+    var jsonOptions = new System.Text.Json.JsonSerializerOptions
+    {
+        PropertyNamingPolicy = System.Text.Json.JsonNamingPolicy.CamelCase,
+        ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles
+    };
+    var coleccionPropiaJson = System.Text.Json.JsonSerializer.Serialize(coleccionPropia, jsonOptions);
+    var coleccionesPublicasJson = System.Text.Json.JsonSerializer.Serialize(coleccionesPublicas, jsonOptions);
+}
+
+<form id="intercambioForm" asp-antiforgery="true" v-on:submit.prevent>
+    <div class="container" id="appVue" v-cloak>
+        <h2 class="text-center mb-4">Crear Intercambio</h2>
+
+        <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+        <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
+
+        <div v-if="cargando" class="alert alert-info">Cargando datos...</div>
+
+        <div class="row">
+            <!-- Columna Emisor -->
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <img v-if="coleccionPropia && coleccionPropia.usuario && coleccionPropia.usuario.avatar" 
+                                 :src="coleccionPropia.usuario.avatar" 
+                                 width="30" height="30" class="rounded-circle me-2" 
+                                 alt="Avatar" />
+                            <img v-else src="/Uploads/avatar.png" 
+                                 width="30" height="30" class="rounded-circle me-2" 
+                                 alt="Default Avatar" />
+                            {{ coleccionPropia ? coleccionPropia.nombre : 'Cargando...' }}
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div v-if="!cartasEmisorDisponibles.length" class="text-muted">
+                            No hay cartas disponibles en tu colección
+                        </div>
+                        <div class="row row-cols-2 row-cols-md-3 g-2">
+                            <div class="col" v-for="carta in cartasEmisorDisponibles" :key="'emisor-' + carta.idCarta">
+                                <div class="card h-100" 
+                                     :class="{ 'border-primary': cartaSeleccionadaEmisor(carta.idCarta) }"
+                                     @@click="toggleCartaEmisor(carta)">
+                                    <img :src="carta.imagen" class="card-img-top" alt="Carta">
+                                    <div class="card-body p-1 text-center">
+                                        <small class="card-text">{{ carta.nombre }}</small>
+                                        <small class="d-block text-muted">{{ carta.cantidadDisponible }} disponibles</small>
+                                        <div v-if="cartaSeleccionadaEmisor(carta.idCarta)" class="mt-1">
+                                            <button class="btn btn-sm btn-danger" @@click.stop="disminuirCantidadEmisor(carta)">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <span class="mx-2">{{ getCantidadSeleccionadaEmisor(carta.idCarta) }}</span>
+                                            <button class="btn btn-sm btn-success" @@click.stop="aumentarCantidadEmisor(carta)">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bandeja Emisor -->
+                <div class="card mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Mis cartas para intercambiar</h5>
+                    </div>
+                    <div class="card-body">
+                        <div v-if="cartasEmisorSeleccionadas.length === 0" class="text-muted">
+                            Selecciona cartas de tu colección para intercambiar
+                        </div>
+                        <div class="d-flex flex-wrap">
+                            <div v-for="carta in cartasEmisorSeleccionadas" :key="'emisor-sel-' + carta.idCarta" class="me-2 mb-2">
+                                <div class="card" style="width: 80px;">
+                                    <img :src="carta.imagen" class="card-img-top" alt="Carta">
+                                    <div class="card-body p-1 text-center">
+                                        <small class="card-text">{{ carta.cantidad }}x</small>
+                                        <button class="btn btn-sm btn-danger" @@click="quitarCartaEmisor(carta.idCarta)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Central -->
+            <div class="col-md-2 d-flex flex-column justify-content-center align-items-center">
+                <div class="text-center mb-3">
+                    <h5>Intercambiando con: {{ coleccionReceptor ? coleccionReceptor.nombre + ' (' + coleccionReceptor.usuario.nombre + ')' : 'Cargando...' }}</h5>
+                </div>
+                <button type="button" class="btn btn-primary btn-lg" :disabled="!puedeEnviar" @@click="enviarIntercambio">
+                    <i class="fas fa-paper-plane"></i> Enviar Solicitud
+                </button>
+            </div>
+
+            <!-- Columna Receptor -->
+            <div class="col-md-5">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <img v-if="coleccionReceptor && coleccionReceptor.usuario && coleccionReceptor.usuario.avatar" 
+                                 :src="coleccionReceptor.usuario.avatar" 
+                                 width="30" height="30" class="rounded-circle me-2" 
+                                 alt="Avatar" />
+                            <img v-else src="/Uploads/avatar.png" 
+                                 width="30" height="30" class="rounded-circle me-2" 
+                                 alt="Default Avatar" />
+                            {{ coleccionReceptor ? coleccionReceptor.nombre : 'Cargando...' }}
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div v-if="!cartasReceptorDisponibles.length" class="text-muted">
+                            No hay cartas disponibles en la colección seleccionada
+                        </div>
+                        <div class="row row-cols-2 row-cols-md-3 g-2">
+                            <div class="col" v-for="carta in cartasReceptorDisponibles" :key="'receptor-' + carta.idCarta">
+                                <div class="card h-100" 
+                                     :class="{ 'border-primary': cartaSeleccionadaReceptor(carta.idCarta) }"
+                                     @@click="toggleCartaReceptor(carta)">
+                                    <img :src="carta.imagen" class="card-img-top" alt="Carta">
+                                    <div class="card-body p-1 text-center">
+                                        <small class="card-text">{{ carta.nombre }}</small>
+                                        <div v-if="cartaSeleccionadaReceptor(carta.idCarta)" class="mt-1">
+                                            <button class="btn btn-sm btn-danger" @@click.stop="disminuirCantidadReceptor(carta)">
+                                                <i class="fas fa-minus"></i>
+                                            </button>
+                                            <span class="mx-2">{{ getCantidadSeleccionadaReceptor(carta.idCarta) }}</span>
+                                            <button class="btn btn-sm btn-success" @@click.stop="aumentarCantidadReceptor(carta)">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bandeja Receptor -->
+                <div class="card mt-3">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Cartas que deseo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div v-if="cartasReceptorSeleccionadas.length === 0" class="text-muted">
+                            Selecciona cartas que deseas obtener
+                        </div>
+                        <div class="d-flex flex-wrap">
+                            <div v-for="carta in cartasReceptorSeleccionadas" :key="'receptor-sel-' + carta.idCarta" class="me-2 mb-2">
+                                <div class="card" style="width: 80px;">
+                                    <img :src="carta.imagen" class="card-img-top" alt="Carta">
+                                    <div class="card-body p-1 text-center">
+                                        <small class="card-text">{{ carta.cantidad }}x</small>
+                                        <button class="btn btn-sm btn-danger" @@click="quitarCartaReceptor(carta.idCarta)">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/js/all.min.js" crossorigin="anonymous"></script>
+    <script>
+        $(document).ready(() => {
+            const appVue = new Vue({
+                el: '#appVue',
+                data: {
+                    coleccionPropia: @Html.Raw(coleccionPropiaJson),
+                    coleccionesPublicas: @Html.Raw(coleccionesPublicasJson),
+                    idColeccionReceptor: @ViewBag.IdColeccionReceptor,
+                    coleccionReceptor: null,
+                    cartasEmisorDisponibles: [],
+                    cartasReceptorDisponibles: [],
+                    cartasEmisorSeleccionadas: [],
+                    cartasReceptorSeleccionadas: [],
+                    errorMessage: null,
+                    successMessage: null,
+                    cargando: false
+                },
+                computed: {
+                    puedeEnviar() {
+                        const canSend = this.idColeccionReceptor > 0 && 
+                               this.coleccionPropia && this.coleccionPropia.idColeccion > 0 &&
+                               this.cartasEmisorSeleccionadas.length > 0 && 
+                               this.cartasReceptorSeleccionadas.length > 0;
+                        
+                        return canSend;
+                    }
+                },
+                methods: {
+                    cargarCartasEmisor() {
+                        
+                        if (!this.coleccionPropia || !this.coleccionPropia.idColeccion) {
+                            this.errorMessage = "Error: Colección propia no disponible";
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: this.errorMessage,
+                                confirmButtonText: 'OK'
+                            });
+                            return;
+                        }
+                        this.cartasEmisorDisponibles = this.coleccionPropia.cartas
+                            ? this.coleccionPropia.cartas.reduce((acc, carta) => {
+                                  const existente = acc.find(c => c.idCarta === carta.idCarta);
+                                  if (existente) {
+                                      existente.cantidadDisponible++;
+                                  } else {
+                                      acc.push({
+                                          idCarta: carta.idCarta,
+                                          nombre: carta.nombre,
+                                          imagen: carta.imagen,
+                                          valorEstimado: carta.valorEstimado,
+                                          cantidadDisponible: 1
+                                      });
+                                  }
+                                  return acc;
+                              }, [])
+                            : [];
+                        
+                    },
+                    cargarCartasReceptor() {
+                        
+                        if (!this.idColeccionReceptor || this.idColeccionReceptor <= 0) {
+                            this.errorMessage = "Error: ID de colección receptora no válido";
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: this.errorMessage,
+                                confirmButtonText: 'OK'
+                            });
+                            return;
+                        }
+                        this.cargando = true;
+                        $.ajax({
+                            url: `/Intercambio/ObtenerCartasColeccion?idColeccion=${this.idColeccionReceptor}`,
+                            method: 'GET'
+                        }).done((data) => {
+                            
+                            if (data.success) {
+                                this.cartasReceptorDisponibles = data.cartas;
+                                this.coleccionReceptor = this.coleccionesPublicas.find(c => c.idColeccion == this.idColeccionReceptor);
+                                
+                            } else {
+                                this.errorMessage = data.message || "Error al cargar las cartas";
+                                console.error("Server error:", this.errorMessage);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: this.errorMessage,
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        }).fail((jqXHR, textStatus, errorThrown) => {
+                            this.errorMessage = "Error al cargar las cartas: " + textStatus;
+                            console.error("cargarCartasReceptor error:", errorThrown);
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: this.errorMessage,
+                                confirmButtonText: 'OK'
+                            });
+                        }).always(() => {
+                            this.cargando = false;
+                        });
+                    },
+                    toggleCartaEmisor(carta) {
+                        
+                        if (this.cartaSeleccionadaEmisor(carta.idCarta)) {
+                            this.quitarCartaEmisor(carta.idCarta);
+                        } else {
+                            this.agregarCartaEmisor(carta);
+                        }
+                    },
+                    agregarCartaEmisor(carta) {
+                        
+                        const existente = this.cartasEmisorSeleccionadas.find(c => c.idCarta === carta.idCarta);
+                        if (existente) {
+                            if (existente.cantidad < this.getCantidadDisponibleEmisor(carta.idCarta)) {
+                                existente.cantidad++;
+                                
+                            }
+                        } else {
+                            this.cartasEmisorSeleccionadas.push({
+                                idCarta: carta.idCarta,
+                                nombre: carta.nombre,
+                                imagen: carta.imagen,
+                                valorEstimado: carta.valorEstimado,
+                                cantidad: 1
+                            });
+                            
+                        }
+                    },
+                    quitarCartaEmisor(idCarta) {
+                        
+                        const index = this.cartasEmisorSeleccionadas.findIndex(c => c.idCarta === idCarta);
+                        if (index !== -1) {
+                            this.cartasEmisorSeleccionadas.splice(index, 1);
+                            
+                        }
+                    },
+                    aumentarCantidadEmisor(carta) {
+                        
+                        const existente = this.cartasEmisorSeleccionadas.find(c => c.idCarta === carta.idCarta);
+                        if (existente && existente.cantidad < this.getCantidadDisponibleEmisor(carta.idCarta)) {
+                            existente.cantidad++;
+                            
+                        }
+                    },
+                    disminuirCantidadEmisor(carta) {
+                        
+                        const existente = this.cartasEmisorSeleccionadas.find(c => c.idCarta === carta.idCarta);
+                        if (existente) {
+                            if (existente.cantidad > 1) {
+                                existente.cantidad--;
+                                
+                            } else {
+                                this.quitarCartaEmisor(carta.idCarta);
+                            }
+                        }
+                    },
+                    getCantidadSeleccionadaEmisor(idCarta) {
+                        const existente = this.cartasEmisorSeleccionadas.find(c => c.idCarta === idCarta);
+                        return existente ? existente.cantidad : 0;
+                    },
+                    getCantidadDisponibleEmisor(idCarta) {
+                        const carta = this.cartasEmisorDisponibles.find(c => c.idCarta === idCarta);
+                        return carta ? carta.cantidadDisponible : 0;
+                    },
+                    cartaSeleccionadaEmisor(idCarta) {
+                        return this.cartasEmisorSeleccionadas.some(c => c.idCarta === idCarta);
+                    },
+                    toggleCartaReceptor(carta) {
+                        
+                        if (this.cartaSeleccionadaReceptor(carta.idCarta)) {
+                            this.quitarCartaReceptor(carta.idCarta);
+                        } else {
+                            this.agregarCartaReceptor(carta);
+                        }
+                    },
+                    agregarCartaReceptor(carta) {
+                        
+                        const existente = this.cartasReceptorSeleccionadas.find(c => c.idCarta === carta.idCarta);
+                        if (existente) {
+                            if (existente.cantidad < this.getCantidadDisponibleReceptor(carta.idCarta)) {
+                                existente.cantidad++;
+                                
+                            }
+                        } else {
+                            this.cartasReceptorSeleccionadas.push({
+                                idCarta: carta.idCarta,
+                                nombre: carta.nombre,
+                                imagen: carta.imagen,
+                                valorEstimado: carta.valorEstimado,
+                                cantidad: 1
+                            });
+                            
+                        }
+                    },
+                    quitarCartaReceptor(idCarta) {
+                       
+                        const index = this.cartasReceptorSeleccionadas.findIndex(c => c.idCarta === idCarta);
+                        if (index !== -1) {
+                            this.cartasReceptorSeleccionadas.splice(index, 1);
+                            
+                        }
+                    },
+                    aumentarCantidadReceptor(carta) {
+                        
+                        const existente = this.cartasReceptorSeleccionadas.find(c => c.idCarta === carta.idCarta);
+                        if (existente && existente.cantidad < this.getCantidadDisponibleReceptor(carta.idCarta)) {
+                            existente.cantidad++;
+                            
+                        }
+                    },
+                    disminuirCantidadReceptor(carta) {
+                        
+                        const existente = this.cartasReceptorSeleccionadas.find(c => c.idCarta === carta.idCarta);
+                        if (existente) {
+                            if (existente.cantidad > 1) {
+                                existente.cantidad--;
+                                
+                            } else {
+                                this.quitarCartaReceptor(carta.idCarta);
+                            }
+                        }
+                    },
+                    getCantidadSeleccionadaReceptor(idCarta) {
+                        const existente = this.cartasReceptorSeleccionadas.find(c => c.idCarta === idCarta);
+                        return existente ? existente.cantidad : 0;
+                    },
+                    getCantidadDisponibleReceptor(idCarta) {
+                        const carta = this.cartasReceptorDisponibles.find(c => c.idCarta === idCarta);
+                        return carta ? carta.cantidadDisponible : 0;
+                    },
+                    cartaSeleccionadaReceptor(idCarta) {
+                        return this.cartasReceptorSeleccionadas.some(c => c.idCarta === idCarta);
+                    },
+                    enviarIntercambio() {
+                        
+                        if (!this.puedeEnviar) {
+                            this.errorMessage = "Selecciona al menos una carta de cada lado y verifica las colecciones";
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: this.errorMessage,
+                                confirmButtonText: 'OK'
+                            });
+                            return;
+                        }
+                        this.cargando = true;
+                        this.errorMessage = null;
+                        this.successMessage = null;
+
+                     
+
+                        const intercambio = {
+                            IdColeccionEmisor: this.coleccionPropia ? this.coleccionPropia.idColeccion : 0,
+                            IdColeccionReceptor: this.idColeccionReceptor || 0,
+                            CartasEmisor: this.cartasEmisorSeleccionadas.map(c => ({
+                                IdCarta: c.idCarta,
+                                Cantidad: c.cantidad
+                            })),
+                            CartasReceptor: this.cartasReceptorSeleccionadas.map(c => ({
+                                IdCarta: c.idCarta,
+                                Cantidad: c.cantidad
+                            }))
+                        };
+
+                        
+                        if (!intercambio.IdColeccionEmisor || !intercambio.IdColeccionReceptor) {
+                            this.errorMessage = "Error: IDs de colección no válidos";
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: this.errorMessage,
+                                confirmButtonText: 'OK'
+                            });
+                            this.cargando = false;
+                            return;
+                        }
+                        if (!intercambio.CartasEmisor.length || !intercambio.CartasReceptor.length) {
+                            this.errorMessage = "Error: No se seleccionaron cartas";
+                            
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: this.errorMessage,
+                                confirmButtonText: 'OK'
+                            });
+                            this.cargando = false;
+                            return;
+                        }
+
+                        const token = $('#intercambioForm input[name="__RequestVerificationToken"]').val();
+                        if (!token) {
+                            this.errorMessage = "Error: Token de verificación no encontrado";
+                            ;
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: this.errorMessage,
+                                confirmButtonText: 'OK'
+                            });
+                            this.cargando = false;
+                            return;
+                        }
+                        
+
+                        $.ajax({
+                            url: '/Intercambio/Create',
+                            method: 'POST',
+                            headers: {
+                                'RequestVerificationToken': token
+                            },
+                            contentType: 'application/json',
+                            data: JSON.stringify(intercambio),
+                            cache: false
+                        }).done((data) => {
+                            
+                            if (data.success) {
+                                this.successMessage = data.message || "Intercambio creado exitosamente";
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Éxito',
+                                    text: this.successMessage,
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    
+                                    setTimeout(() => {
+                                        window.location.href = '/Intercambio/IntercambioPendiente';
+                                    }, 1500);
+                                });
+                            } else {
+                                this.errorMessage = data.message || "Error al crear el intercambio";
+                                console.error("Server error:", this.errorMessage);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: this.errorMessage,
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        }).fail((jqXHR, textStatus, errorThrown) => {
+                            console.error("enviarIntercambio error:", {
+                                status: jqXHR.status,
+                                statusText: textStatus,
+                                errorThrown: errorThrown,
+                                responseText: jqXHR.responseText
+                            });
+                            if (jqXHR.status === 302) {
+                                const redirectUrl = jqXHR.getResponseHeader('Location') || '/Usuario/Login';
+                                console.log("Redirecting to:", redirectUrl);
+                                this.errorMessage = "Redirigido inesperadamente. Verifica tu sesion.";
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: this.errorMessage,
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    window.location.href = redirectUrl;
+                                });
+                            } else if (jqXHR.status === 400) {
+                                const responseJson = jqXHR.responseJSON || { message: "Error al crear el intercambio" };
+                                this.errorMessage = responseJson.message || "Error al crear el intercambio";
+                                console.error("Bad request:", responseJson);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: this.errorMessage,
+                                    confirmButtonText: 'OK'
+                                });
+                            } else {
+                                this.errorMessage = "Error al enviar el intercambio: " + textStatus;
+                                console.error("Error en enviarIntercambio:", errorThrown);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: this.errorMessage,
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        }).always(() => {
+                            this.cargando = false;
+                        });
+                    }
+                },
+                mounted() {
+                    
+                    this.cargarCartasEmisor();
+                    this.cargarCartasReceptor();
+                }
+            });
+        });
+    </script>
+}

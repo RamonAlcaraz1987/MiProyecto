@@ -8,6 +8,8 @@ namespace MiProyecto.Models
 {
     public interface IRepositorioUsuario: IRepositorio<Usuario>
     {
+        public int ContarTodos();
         Usuario ObtenerPorEmail(string email);
+        IList<Usuario> BuscarPorDNI(string DNI);
     }
 }

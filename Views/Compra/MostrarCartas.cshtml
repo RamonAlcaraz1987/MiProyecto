@@ -1,0 +1,70 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Mostrar Cartas";
+    var cardData = ViewBag.CardData as List<(string Image, int IdCarta, int IdCategoria)>;
+    var packName = ViewBag.PackName as string;
+}
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4">Cartas del Pack: @packName</h2>
+    <div class="row">
+        @if (cardData != null)
+        {
+            @foreach (var card in cardData)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card-container" data-card-id="@card.IdCarta" data-rarity="@card.IdCategoria">
+                        <div class="card-inner">
+                            <div class="card-front">
+                                <img src="@card.Image" alt="Carta" class="pokemon-card" width="276" height="386">
+                            </div>
+                            <div class="card-back">
+                                <img src="/imagenes/Back.png" alt="Carta trasera" class="pokemon-card" width="276" height="386">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <p>No se encontraron cartas para mostrar.</p>
+        }
+    </div>
+    <div class="text-center mt-4">
+        <a href="@Url.Action("Create", "Compra")" class="btn btn-primary">Volver a Comprar</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const cards = document.querySelectorAll('.card-container');
+
+            cards.forEach(card => {
+                card.addEventListener('click', function () {
+                    const inner = card.querySelector('.card-inner');
+                    const rarity = parseInt(card.getAttribute('data-rarity'));
+
+                    inner.classList.toggle('is-flipped');
+
+                    card.classList.remove('raro-brillo', 'epico-pulsar', 'legendario-choque');
+
+                    if (inner.classList.contains('is-flipped')) {
+                        switch (rarity) {
+                            case 2:
+                                card.classList.add('raro-brillo');
+                                break;
+                            case 3:
+                                card.classList.add('epico-pulsar');
+                                break;
+                            case 4:
+                                card.classList.add('legendario-choque');
+                                break;
+                        }
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -17,6 +17,8 @@ namespace MiProyecto.Models
         
         protected IDbConnection GetConnection()
         {
+            
+          
             return new MySqlConnection(connectionString);
         }
     }

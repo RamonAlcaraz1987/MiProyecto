@@ -1,0 +1,132 @@
+@model MiProyecto.Models.Intercambio
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Intercambio Pendiente";
+    var rnd = new Random();
+    int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+    bool esEmisor = Model.IdUsuarioEmisor == idUsuario;
+}
+
+<div class="container">
+    <h2 class="text-center mb-4">Intercambio Pendiente</h2>
+
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">Detalles del Intercambio</h4>
+                <div>
+                    <span class="badge bg-warning text-dark">Pendiente</span>
+                </div>
+            </div>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Fecha:</strong> @Model.Fecha.ToString("dd/MM/yyyy HH:mm")</p>
+                    <p><strong>Iniciado por:</strong> @Model.Emisor.Nombre @Model.Emisor.Apellido</p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Estado:</strong> Pendiente de @(esEmisor ? "aceptación" : "tu aceptación")</p>
+                    <p><strong>Participante:</strong> @Model.Receptor.Nombre @Model.Receptor.Apellido</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Cartas del Emisor -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <img src="@Model.Emisor.Avatar" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
+                        @Model.ColeccionEmisor.Nombre
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (Model.Cartas == null || !Model.Cartas.Any(c => c.EsDeEmisor == 1))
+                    {
+                        <p class="text-center text-muted">No hay cartas seleccionadas por el Emisor.</p>
+                    }
+                    else
+                    {
+                        <div class="row row-cols-2 row-cols-md-3 g-2">
+                            @foreach (var carta in Model.Cartas.Where(c => c.EsDeEmisor == 1))
+                            {
+                                <div class="col">
+                                    <div class="card h-100">
+                                        <img src="@(carta.Carta.Imagen + "?" + rnd.Next())" class="card-img-top" alt="Carta">
+                                        <div class="card-body p-1 text-center">
+                                            <small class="card-text">@carta.Cantidad x @carta.Carta.Nombre</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        
+
+        <!-- Acciones -->
+        <div class="col-md-2 d-flex flex-column justify-content-center align-items-center">
+            @if (!esEmisor)
+            {
+                <form asp-action="AceptarIntercambio" method="post" class="mb-2">
+                    <input type="hidden" name="id" value="@Model.IdIntercambio" />
+                    <button type="submit" class="btn btn-success btn-lg">
+                        <i class="fas fa-check"></i> Aceptar
+                    </button>
+                </form>
+            }
+            <form asp-action="CancelarIntercambio" method="post">
+                <input type="hidden" name="id" value="@Model.IdIntercambio" />
+                <button type="submit" class="btn btn-danger btn-lg">
+                    <i class="fas fa-times"></i> Cancelar
+                </button>
+            </form>
+        </div>
+
+        <!-- Cartas del Receptor -->
+        <div class="col-md-5">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <img src="@Model.Receptor.Avatar" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
+                        @Model.ColeccionReceptor.Nombre
+                    </h4>
+                </div>
+                <div class="card-body">
+                    @if (Model.Cartas == null || !Model.Cartas.Any(c => c.EsDeEmisor == 0))
+                    {
+                        <p class="text-center text-muted">No hay cartas seleccionadas por el Receptor.</p>
+                    }
+                    else
+                    {
+                        <div class="row row-cols-2 row-cols-md-3 g-2">
+                            @foreach (var carta in Model.Cartas.Where(c => c.EsDeEmisor == 0))
+                            {
+                                <div class="col">
+                                    <div class="card h-100">
+                                        <img src="@(carta.Carta.Imagen + "?" + rnd.Next())" class="card-img-top" alt="Carta">
+                                        <div class="card-body p-1 text-center">
+                                            <small class="card-text">@carta.Cantidad x @carta.Carta.Nombre</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4 text-center">
+        <a asp-action="Index" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Volver a la lista
+        </a>
+    </div>
+</div>
+

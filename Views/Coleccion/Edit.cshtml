@@ -1,0 +1,42 @@
+@model MiProyecto.Models.Coleccion
+
+@{
+    ViewData["Title"] = "Editar Colección";
+}
+
+<div class="container mt-5">
+    <h2><i class="fas fa-edit"></i> @ViewData["Title"]</h2>
+
+    <div class="card">
+        <div class="card-body">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <form asp-action="Edit" method="post">
+                <input type="hidden" asp-for="IdColeccion" />
+                <input type="hidden" asp-for="IdUsuario" />
+                <input type="hidden" asp-for="Estado" />
+                <div class="mb-3">
+                    <label asp-for="Nombre" class="form-label"></label>
+                    <input asp-for="Nombre" class="form-control" />
+                    <span asp-validation-for="Nombre" class="text-danger"></span>
+                </div>
+                <div class="mb-3">
+                    <label asp-for="EsPublica" class="form-label">Visibilidad</label>
+                    <select asp-for="EsPublica" class="form-select">
+                        <option value="0">Privada</option>
+                        <option value="1">Pública</option>
+                    </select>
+                    <span asp-validation-for="EsPublica" class="text-danger"></span>
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save"></i> Guardar
+                </button>
+                <a asp-action="Index" asp-route-pagina="@ViewBag.PaginaActual" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Cancelar
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

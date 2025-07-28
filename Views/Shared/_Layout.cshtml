@@ -1,9 +1,12 @@
-﻿<!DOCTYPE html>
+﻿@inject MiProyecto.Models.IRepositorioUsuario RepositorioUsuario
+
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - Collector Cave</title>
+    <link rel="icon" type="image/x-icon" href="~/Imagenes/favicon.ico">
     <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/select2-bootstrap-theme/0.1.0-beta.10/select2-bootstrap.css" integrity="sha512-CbQfNVBSMAYmnzP3IC+mZZmYMP2HUnVkV4+PwuhpiMUmITtSpS7Prr3fNncV1RBOnWxzz4pYQ5EAGG4ck46Oig==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css" integrity="sha512-Zcn6bjR/8RZbLEpLIeOwNtzREBAJnUKESxces60Mpoj+2okopSAcSUIUOseddDm0cxnGQzxIR7vJgsLZbdLE3w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
@@ -16,7 +19,7 @@
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-dark bg-dark border-bottom box-shadow mb-3">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index"><img src="~/imagenes/logo.png" width="130" height="70" class="d-inline-block align-top" alt="Logo"></a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
@@ -30,29 +33,40 @@
                             @if(User.IsInRole("Administrador"))
                             {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Usuario" asp-action="Index">Usuarios</a>
+                                <a class="nav-link" asp-area="" asp-controller="Usuario" asp-action="Index">Usuarios</a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link text-dark" asp-area="" asp-controller="Carta" asp-action="Index">Cartas</a>
+                                <a class="nav-link" asp-area="" asp-controller="Carta" asp-action="Index">Cartas</a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Compra" asp-action="Index">Compras</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" asp-area="" asp-controller="Pack" asp-action="Index">Packs</a>
+                            </li>
+                           
+                           
+                           
 
                             }
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Compra" asp-action="Index">Tienda</a>
+                            <a class="nav-link" asp-area="" asp-controller="Compra" asp-action="Create">Tienda</a>
+                        </li>
+                        
+                        <li class="nav-item">
+                            <a class="nav-link" asp-area="" asp-controller="Coleccion" asp-action="Index">Colecciones/Crear Intercambio</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Coleccion" asp-action="Index">Colecciones</a>
+                            <a class="nav-link" asp-area="" asp-controller="Intercambio" asp-action="Index">Mis Intercambios</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Coleccion" asp-action="Index">Mi Coleccion</a>
+                                <a class="nav-link" asp-area="" asp-controller="Intercambio" asp-action="IntercambioPendiente">Intercambio Pendiente</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Intercambio" asp-action="Index">Intercambio</a>
-                        </li>
+                        
                         <!-- dropdown-menu -->
                          <li class="nav-item dropdown ms-auto">
                                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                                    <i class="fas fa-user-circle me-1"></i> @User.FindFirst("FullName")?.Value
+                                    <i class="fas fa-user-circle me-1"></i> @User.FindFirst("FullName")?.Value <i class="fas fa-star text-warning ms-1"></i> @(User.Identity.IsAuthenticated ? RepositorioUsuario.ObtenerPorEmail(User.Identity.Name)?.PuntosVirtuales ?? 0 : 0)
                                 </a>
                                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
                                     <li>
@@ -75,10 +89,10 @@
                         else
                         {
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
+                            <a class="nav-link" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Usuario" asp-action="Login">Acceder</a>
+                            <a class="nav-link" asp-area="" asp-controller="Usuario" asp-action="Login">Acceder</a>
                         </li>
                         }
                 </div>
@@ -93,7 +107,7 @@
 
     <footer class="border-top footer text-muted">
         <div class="container">
-            &copy; 2025 - MiProyecto - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            &copy; 2025 - cualquier anulacion o reclamo al 2664587744 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
         </div>
     </footer>
     <script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>

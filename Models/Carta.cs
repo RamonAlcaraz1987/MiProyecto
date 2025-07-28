@@ -28,18 +28,17 @@ namespace MiProyecto.Models
         public int IdTipo1 { get; set; }
         public Tipo? Tipo1 { get; set; }
 
-        [Required]
         [Display(Name = "Tipo 2")]
         public int IdTipo2 { get; set; }
         public Tipo? Tipo2 { get; set; }
 
         [Required]
-        public string Estado { get; set; }
+        public int Estado { get; set; }
 
         [Required]
         public int ValorEstimado { get; set; }
 
-        [Required]
+        
         public string Imagen { get; set; }
 
         [NotMapped]

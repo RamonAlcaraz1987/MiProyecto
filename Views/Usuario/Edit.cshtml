@@ -2,6 +2,7 @@
 
 @{
     ViewData["Title"] = "Editar";
+    var rnd = new Random();
 }
 
 
@@ -14,6 +15,8 @@
         <form asp-action="Edit" method="post" enctype="multipart/form-data" id="usuarioForm">
             <div asp-validation-summary="ModelOnly" class="text-danger"></div>
             <input type="hidden" asp-for="IdUsuario" />
+            <input type="hidden" asp-for="DNI" />
+            <input type="hidden" asp-for="PuntosVirtuales" />
             
             <div class="form-group">
                 <label asp-for="Nombre" class="control-label"></label>

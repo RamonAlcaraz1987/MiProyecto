@@ -1,0 +1,34 @@
+@model MiProyecto.Models.Compra
+@using System.Security.Claims
+
+@{
+    ViewData["Title"] = "Tienda";
+    int IdUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+    var packs = ViewBag.Packs as List<MiProyecto.Models.Pack>;
+}
+
+<h2> Pack Shop</h2>
+
+
+
+<div class="row" id="pack-shop">
+    @foreach (var pack in packs)
+    {
+        <div class="col-md-3 text-center">
+            <img src="@(pack.Imagen ?? "/PacksArte/default.png")" alt="Sobre @(pack.Nombre)" class="img-fluid" style="max-width: 200px" />
+            <h4>@pack.Nombre</h4>
+            <p>@pack.Precio <i class="fas fa-star"></i></p>
+            <p>@pack.Leyenda</p>
+            <form asp-action="ComprarSobre" asp-controller="Compra" method="post">
+                <input type="hidden" name="IdPack" value="@pack.IdPack" />
+                <input type="hidden" name="IdUsuario" value="@IdUsuario" />
+                <button type="submit" class="btn btn-primary">Comprar</button>
+            </form>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+

@@ -17,6 +17,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Net.Http.Headers;
 using Newtonsoft.Json.Serialization;
 using MySql.Data.MySqlClient;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Text;
 
 namespace MiProyecto.Controllers
 {
@@ -33,16 +36,28 @@ namespace MiProyecto.Controllers
             this.configuration = configuration;
             this.environment = environment;
             this.repositorio = repositorio;
+           
         }
 
         [Authorize(Policy = "Administrador")]
-        public IActionResult Index(int pagina = 1)
+        public IActionResult Index(int pagina = 1, int tamPagina = 10, string dniFiltro = null)
         {
-            int tamPagina = 10;
-            var usuarios = repositorio.ObtenerTodos(pagina, tamPagina);
+           var usuarios = string.IsNullOrEmpty(dniFiltro)
+                ? repositorio.ObtenerTodos(pagina, tamPagina)
+                : repositorio.BuscarPorDNI(dniFiltro);
+
+            var totalPaginas = string.IsNullOrEmpty(dniFiltro)
+                ? (int)Math.Ceiling((double)repositorio.ContarTodos() / tamPagina)
+                : (int)Math.Ceiling((double)usuarios.Count / tamPagina);
+
+            pagina = Math.Max(1, Math.Min(pagina, totalPaginas > 0 ? totalPaginas : 1));    
+
+            ViewBag.TotalPaginas = totalPaginas;
             ViewBag.PaginaActual = pagina;
+            ViewBag.DniFiltro = dniFiltro ?? "";
             return View(usuarios);
         }
+           
 
         [Authorize(Policy = "Administrador")]
         public IActionResult Details(int id)
@@ -422,7 +437,7 @@ namespace MiProyecto.Controllers
         }
         [HttpPost]
         [AllowAnonymous]
-        [ValidateAntiForgeryToken]
+        //[ValidateAntiForgeryToken]
         public async Task<IActionResult> Login(LoginView login, string returnUrl)
         {
              ModelState.Clear();
@@ -437,13 +452,13 @@ namespace MiProyecto.Controllers
                         iterationCount: 1000,
                         numBytesRequested: 256 / 8));
 
-						Console.WriteLine($" hash: {hashed}");
+						
 
                     var usuario = repositorio.ObtenerPorEmail(login.Usuario);
                     
                     if (usuario == null || usuario.Clave != hashed)
                     {
-                        Console.WriteLine($"Usuario no encontrado: {login.Usuario}");
+                       
                         ModelState.AddModelError(string.Empty, "Credenciales incorrectas");
                         ViewBag.ErrorMessage = "Credenciales incorrectas";
                         return View(login);
@@ -453,7 +468,7 @@ namespace MiProyecto.Controllers
 
                     if (usuario.Clave != hashed || !string.Equals(login.Usuario, usuario.Email, StringComparison.OrdinalIgnoreCase))
                     {
-                        Console.WriteLine($"Usuario no encontrado: {login.Usuario}");
+                        
                         ModelState.AddModelError(string.Empty, "Credenciales incorrectas");
                         ViewBag.ErrorMessage = "Credenciales incorrectas";
                         return View(login);
@@ -465,9 +480,16 @@ namespace MiProyecto.Controllers
                         new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
                         new Claim("FullName", $"{usuario.Nombre} {usuario.Apellido}"),
                         new Claim(ClaimTypes.Role, usuario.Rol),
+                        new Claim("PuntosVirtuales", usuario.PuntosVirtuales.ToString())
                     };
 
-                    Console.WriteLine($"User ID en claims: {usuario.IdUsuario}");
+                    
+
+                    if (Request.Headers["Content-Type"].Contains("application/json"))
+                        {
+                            var token = GenerarTokenJWT(usuario);
+                            return Ok(new { Token = token });
+                        }
 
                     var claimsIdentity = new ClaimsIdentity(
                         claims, CookieAuthenticationDefaults.AuthenticationScheme);
@@ -492,12 +514,90 @@ namespace MiProyecto.Controllers
             }
               catch (Exception ex)
             {
-                Console.WriteLine($"Error en Login: {ex.Message}\n{ex.StackTrace}");
-                ModelState.AddModelError(string.Empty, $"Error al iniciar sesión: {ex.Message}");
-                ViewBag.ErrorMessage = $"Error al iniciar sesión: {ex.Message}";
+                
+                ModelState.AddModelError(string.Empty, $"Error al iniciar sesion: {ex.Message}");
+                ViewBag.ErrorMessage = $"Error al iniciar sesion: {ex.Message}";
                 return View(login);
             }
         }
+
+        private string GenerarTokenJWT(Usuario usuario)
+        {
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Name, usuario.Email),
+                new Claim(ClaimTypes.NameIdentifier, usuario.IdUsuario.ToString()),
+                new Claim(ClaimTypes.Role, usuario.Rol),
+                new Claim("FullName", $"{usuario.Nombre} {usuario.Apellido}"),
+                new Claim("PuntosVirtuales", usuario.PuntosVirtuales.ToString())
+            };
+
+            var key = new SymmetricSecurityKey(System.Text.Encoding.ASCII.GetBytes(configuration["TokenAuthentication:SecretKey"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var issuer = configuration["TokenAuthentication:Issuer"];
+            var audience = configuration["TokenAuthentication:Audience"];
+
+            var token = new JwtSecurityToken(
+                issuer: issuer,
+                audience: audience,
+                claims: claims,
+                expires: DateTime.Now.AddMinutes(30),
+                signingCredentials: creds);
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+        [HttpPost]
+        [Authorize]
+        [ValidateAntiForgeryToken]
+        public IActionResult ComprarPuntos(int idUsuario, int cantidad)
+        {
+            try
+            {
+                
+                var usuarioDb = repositorio.ObtenerPorEmail(User.Identity.Name);
+                if (usuarioDb == null || usuarioDb.IdUsuario != idUsuario)
+                {
+                    TempData["ErrorMessage"] = "Usuario no autorizado";
+                    return RedirectToAction(nameof(Perfil));
+                }
+
+               
+                if (cantidad <= 0)
+                {
+                    TempData["ErrorMessage"] = "La cantidad debe ser mayor a 0";
+                    return RedirectToAction(nameof(Perfil));
+                }
+
+              
+                usuarioDb.PuntosVirtuales += cantidad;
+                repositorio.Modificacion(usuarioDb);
+
+                TempData["SuccessMessage"] = "Puntos cargados exitosamente";
+                return RedirectToAction(nameof(Perfil));
+            }
+            catch (Exception ex)
+            {
+                TempData["ErrorMessage"] = "Error al cargar los puntos: " + ex.Message;
+                return RedirectToAction(nameof(Perfil));
+            }
+        }
+
+        [HttpGet]
+        [Route("Usuario/Buscar")]
+        public IActionResult Buscar(string q)
+        {
+            try
+            {
+                var res = repositorio.BuscarPorDNI(q);
+                return Json(new { datos = res });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { error = ex.Message });
+            }
+        }
+
+   
 
 
 

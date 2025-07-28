@@ -209,6 +209,59 @@ namespace MiProyecto.Models
                 return e;
                 
             }
+            
+        
+            public IList<Usuario> BuscarPorDNI(string DNI)
+            {
+                IList<Usuario> usuarios = new List<Usuario>();
+                DNI = "%"+DNI+"%";
+                using (var connection = GetConnection())
+                {
+                    connection.Open();
+                    var query = @"SELECT IdUsuario, Nombre, Apellido, DNI, Email, Rol, PuntosVirtuales, Avatar 
+                    FROM usuario
+                    WHERE DNI LIKE @DNI
+                    ORDER BY Apellido, Nombre";
+                    using (var command = new MySqlCommand(query, (MySqlConnection)connection))
+                    {
+                        command.Parameters.AddWithValue("@DNI", DNI);
+                        using (var reader = command.ExecuteReader())
+                        {
+                            while (reader.Read())
+                            {
+                                usuarios.Add(new Usuario
+                                {
+                                    IdUsuario = reader.GetInt32("IdUsuario"),
+                                    Nombre = reader.GetString("Nombre"),
+                                    Apellido = reader.GetString("Apellido"),
+                                    DNI = reader.GetString("DNI"),
+                                    Email = reader.GetString("Email"),
+                                    Rol = reader.GetString("Rol"),
+                                    PuntosVirtuales = reader.GetInt32("PuntosVirtuales"),
+                                    Avatar = reader.IsDBNull("Avatar") ? "" : reader.GetString("Avatar")
+                                });
+                            }
+                        }
+                    }
+                }
+                return usuarios;
+            }
+
+                
+                
+
+            public int ContarTodos()
+            {
+                using (var connection = GetConnection())
+                {
+                    connection.Open();
+                    var query = "SELECT COUNT(*) FROM usuario";
+                    using (var command = new MySqlCommand(query, (MySqlConnection)connection))
+                    {
+                        return Convert.ToInt32(command.ExecuteScalar());
+                    }
+                }
+            }
 
 
 

@@ -1,0 +1,422 @@
+@model IEnumerable<MiProyecto.Models.Intercambio>
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Listado de Intercambios Finalizados";
+    var rnd = new Random();
+    int idUsuario = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier));
+}
+
+<div class="container" id="appVue" v-cloak>
+    <h2 class="text-center mb-4">@ViewData["Title"]</h2>
+
+    <!-- Mensajes de éxito o error -->
+    <div v-if="successMessage" class="alert alert-success">{{ successMessage }}</div>
+    <div v-if="errorMessage" class="alert alert-danger">{{ errorMessage }}</div>
+
+    <!-- Vista de listado -->
+    <div v-if="modo_actual == modos.listado">
+        <div class="table-responsive">
+            <table class="table table-striped table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Fecha</th>
+                        <th>Emisor</th>
+                        <th>Receptor</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Where(i => i.Estado != 0))
+                    {
+                        <tr>
+                            <td>@item.IdIntercambio</td>
+                            <td>@item.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                <img src="@item.Emisor.Avatar" width="30" height="30" class="rounded-circle me-2" />
+                                @item.Emisor.Nombre @item.Emisor.Apellido
+                            </td>
+                            <td>
+                                <img src="@item.Receptor.Avatar" width="30" height="30" class="rounded-circle me-2" />
+                                @item.Receptor.Nombre @item.Receptor.Apellido
+                            </td>
+                            <td>
+                                @if (item.Estado == 1)
+                                {
+                                    <span class="badge bg-success">Aceptado</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger">Cancelado</span>
+                                }
+                            </td>
+                            <td>
+                                <button class="btn btn-info btn-sm" v-on:click="verDetalles(@item.IdIntercambio)">
+                                    <i class="fas fa-eye"></i> Detalles
+                                </button>
+                                @if (User.IsInRole("Administrador"))
+                                {
+                                    <button class="btn btn-primary btn-sm" v-on:click="editarIntercambio(@item.IdIntercambio)">
+                                        <i class="fas fa-edit"></i> Editar
+                                    </button>
+                                    <button class="btn btn-danger btn-sm" v-on:click="eliminarIntercambio(@item.IdIntercambio)">
+                                        <i class="fas fa-trash-alt"></i> Eliminar
+                                    </button>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Paginación -->
+        <div class="d-flex justify-content-between mt-4">
+            <a asp-action="Index" asp-route-pagina="@(ViewBag.PaginaActual - 1)" 
+               class="@(ViewBag.PaginaActual <= 1 ? "btn btn-secondary disabled" : "btn btn-secondary")">
+                <i class="fas fa-arrow-left"></i> Anterior
+            </a>
+            
+            <div class="pagination">
+                @for (int i = 1; i <= ViewBag.TotalPaginas; i++)
+                {
+                    if (i == ViewBag.PaginaActual)
+                    {
+                        <span class="btn btn-primary disabled mx-1">@i</span>
+                    }
+                    else
+                    {
+                        <a asp-action="Index" asp-route-pagina="@i" class="btn btn-secondary mx-1">@i</a>
+                    }
+                }
+            </div>
+            
+            <a asp-action="Index" asp-route-pagina="@(ViewBag.PaginaActual + 1)"       
+               class="@(ViewBag.PaginaActual >= ViewBag.TotalPaginas ? "btn btn-secondary disabled" : "btn btn-secondary")">
+                Siguiente <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+
+    <!-- Vista de detalles -->
+    <div v-if="modo_actual == modos.detalles">
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Información General</h4>
+                    <div>
+                        <span v-if="intercambioActual.estado == 1" class="badge bg-success">Aceptado</span>
+                        <span v-else class="badge bg-danger">Cancelado</span>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>ID:</strong> {{ intercambioActual.idIntercambio }}</p>
+                        <p><strong>Fecha:</strong> {{ formatFecha(intercambioActual.fecha) }}</p>
+                        <p><strong>Emisor:</strong> {{ intercambioActual.emisor.nombre }} {{ intercambioActual.emisor.apellido }}</p>
+                        <p><strong>Colección Emisor:</strong> {{ intercambioActual.coleccionEmisor.nombre }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Estado:</strong> 
+                            <span v-if="intercambioActual.estado == 1">Aceptado</span>
+                            <span v-else>Cancelado</span>
+                        </p>
+                        <p><strong>Receptor:</strong> {{ intercambioActual.receptor.nombre }} {{ intercambioActual.receptor.apellido }}</p>
+                        <p><strong>Colección Receptor:</strong> {{ intercambioActual.coleccionReceptor.nombre }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <!-- Cartas del Emisor -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <img :src="intercambioActual.emisor.avatar" width="30" height="30" class="rounded-circle me-2" />
+                            Cartas ofrecidas
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row row-cols-2 row-cols-md-3 g-2">
+                            <div class="col" v-for="carta in intercambioActual.cartas.filter(c => c.esDeEmisor)" :key="carta.idIntercambioCarta">
+                                <div class="card h-100">
+                                    <img :src="carta.carta.imagen" class="card-img-top" alt="Carta">
+                                    <div class="card-body p-1 text-center">
+                                        <small class="card-text">{{ carta.cantidad }} x {{ carta.carta.nombre }}</small>
+                                        <p class="card-text small text-muted">{{ carta.carta.valorEstimado }} pts</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cartas del Receptor -->
+            <div class="col-md-6">
+                <div class="card h-100">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <img :src="intercambioActual.receptor.avatar" width="30" height="30" class="rounded-circle me-2" />
+                            Cartas solicitadas
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="row row-cols-2 row-cols-md-3 g-2">
+                            <div class="col" v-for="carta in intercambioActual.cartas.filter(c => !c.esDeEmisor)" :key="carta.idIntercambioCarta">
+                                <div class="card h-100">
+                                    <img :src="carta.carta.imagen" class="card-img-top" alt="Carta">
+                                    <div class="card-body p-1 text-center">
+                                        <small class="card-text">{{ carta.cantidad }} x {{ carta.carta.nombre }}</small>
+                                        <p class="card-text small text-muted">{{ carta.carta.valorEstimado }} pts</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center">
+            <button class="btn btn-secondary" v-on:click="volverLista">
+                <i class="fas fa-arrow-left"></i> Volver a la lista
+            </button>
+        </div>
+    </div>
+
+    <!-- Vista de edición -->
+    <div v-if="modo_actual == modos.edicion">
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">Editar Intercambio #{{ intercambioActual.idIntercambio }}</h4>
+            </div>
+            <div class="card-body">
+                <form id="formEditarIntercambio" v-on:submit.prevent="guardarIntercambio">
+                    <input type="hidden" name="__RequestVerificationToken" v-bind:value="antiForgeryToken" />
+                    <div class="form-group">
+                        <label for="fecha">Fecha</label>
+                        <input type="datetime-local" id="fecha" v-model="intercambioActual.fecha" class="form-control" :disabled="guardando" />
+                        <span class="text-danger" v-if="errores.fecha">{{ errores.fecha }}</span>
+                    </div>
+                    <div class="form-group mt-3">
+                        <button type="button" class="btn btn-secondary" v-on:click="cancelarEdicion" :disabled="guardando">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary" :disabled="guardando">
+                            <span v-if="guardando"><i class="fa fa-spinner fa-spin"></i> </span>
+                            <span v-else><i class="fa fa-save"></i> </span>
+                            Guardar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(() => {
+            const appVue = new Vue({
+                el: '#appVue',
+                data: {
+                    modo_actual: 1,
+                    modos: {
+                        listado: 1,
+                        detalles: 2,
+                        edicion: 3
+                    },
+                    intercambioActual: null,
+                    intercambioOriginal: null,
+                    successMessage: null,
+                    errorMessage: null,
+                    cargando: false,
+                    guardando: false,
+                    errores: { fecha: null },
+                    antiForgeryToken: $('input[name="__RequestVerificationToken"]').val()
+                },
+                methods: {
+                    verDetalles(id) {
+                        this.cargando = true;
+                        this.successMessage = null;
+                        this.errorMessage = null;
+                        $.ajax({
+                            url: `/Intercambio/Detail/${id}`,
+                            method: 'GET',
+                            dataType: 'json'
+                        }).done((data) => {
+                            if (data.success) {
+                                this.intercambioActual = data.intercambio;
+                                this.modo_actual = this.modos.detalles;
+                            } else {
+                                this.errorMessage = data.message;
+                            }
+                        }).fail((jqXHR) => {
+                            this.errorMessage = "Error al cargar el intercambio";
+                        }).always(() => {
+                            this.cargando = false;
+                        });
+                    },
+                    eliminarIntercambio(id) {
+                        Swal.fire({
+                            title: '¿Está seguro?',
+                            text: '¿Desea eliminar este intercambio?',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Sí',
+                            cancelButtonText: 'No'
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                this.cargando = true;
+                                this.successMessage = null;
+                                this.errorMessage = null;
+                                $.ajax({
+                                    url: `/Intercambio/Delete`,
+                                    method: 'POST',
+                                    headers: {
+                                        'RequestVerificationToken': this.antiForgeryToken
+                                    },
+                                    data: { id: id },
+                                    dataType: 'json'
+                                }).done((data) => {
+                                    if (data.success) {
+                                        this.successMessage = data.message;
+                                        setTimeout(() => {
+                                            window.location.reload();
+                                        }, 1500);
+                                    } else {
+                                        this.errorMessage = data.message;
+                                    }
+                                }).fail((jqXHR) => {
+                                    this.errorMessage = "Error al eliminar el intercambio";
+                                }).always(() => {
+                                    this.cargando = false;
+                                });
+                            }
+                        });
+                    },
+                    editarIntercambio(id) {
+                        this.cargando = true;
+                        this.successMessage = null;
+                        this.errorMessage = null;
+                        $.ajax({
+                            url: `/Intercambio/Edit/${id}`,
+                            method: 'GET',
+                            dataType: 'json'
+                        }).done((data) => {
+                            if (data.success) {
+                                
+                                this.intercambioActual = data.intercambio;
+                                this.intercambioOriginal = { ...data.intercambio };
+                                this.modo_actual = this.modos.edicion;
+                                this.errores.fecha = null;
+                            } else {
+                                this.errorMessage = data.message;
+                            }
+                        }).fail((jqXHR) => {
+                            this.errorMessage = "Error al cargar el intercambio para edicion";
+                        }).always(() => {
+                            this.cargando = false;
+                        });
+                    },
+                    guardarIntercambio() {
+                    this.errores.fecha = null;
+                    if (!this.intercambioActual.fecha) {
+                        this.errores.fecha = 'La fecha es requerida.';
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Verifique los datos ingresados'
+                        });
+                        return;
+                    }
+
+                    // Format fecha to match yyyy-MM-ddTHH:mm:ss without UTC conversion
+                    const date = new Date(this.intercambioActual.fecha);
+                    const formattedFecha = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
+                   
+
+                    this.guardando = true;
+                    $.ajax({
+                        url: `/Intercambio/Edit/${this.intercambioActual.idIntercambio}`,
+                        method: 'POST',
+                        headers: {
+                            'RequestVerificationToken': this.antiForgeryToken
+                        },
+                        contentType: 'application/json',
+                        data: JSON.stringify({ 
+                            idIntercambio: this.intercambioActual.idIntercambio,
+                            fecha: formattedFecha
+                        })
+                    }).done((data) => {
+                        if (data.success) {
+                            this.successMessage = data.message;
+                            this.modo_actual = this.modos.listado;
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Éxito',
+                                text: data.message
+                            });
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        } else {
+                            this.errorMessage = data.message;
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: data.message
+                            });
+                        }
+                    }).fail((jqXHR) => {
+                        this.errorMessage = "Error al guardar el intercambio";
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: "Error al guardar el intercambio"
+                        });
+                    }).always(() => {
+                        this.guardando = false;
+                    });
+                },
+                    cancelarEdicion() {
+                        this.intercambioActual = null;
+                        this.intercambioOriginal = null;
+                        this.errores.fecha = null;
+                        this.modo_actual = this.modos.listado;
+                    },
+                    volverLista() {
+                        this.intercambioActual = null;
+                        this.modo_actual = this.modos.listado;
+                    },
+                    formatFecha(fecha) {
+                        const date = new Date(fecha);
+                        return date.toLocaleDateString('es-ES', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    }
+                },
+                mounted() {
+                    @if (TempData["SuccessMessage"] != null)
+                    {
+                        @:this.successMessage = '@TempData["SuccessMessage"]';
+                    }
+                    @if (TempData["ErrorMessage"] != null)
+                    {
+                        @:this.errorMessage = '@TempData["ErrorMessage"]';
+                    }
+                }
+            });
+        });
+    </script>
+}
