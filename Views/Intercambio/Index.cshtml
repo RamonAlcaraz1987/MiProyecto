@@ -34,11 +34,11 @@
                             <td>@item.IdIntercambio</td>
                             <td>@item.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
                             <td>
-                                <img src="@item.Emisor.Avatar" width="30" height="30" class="rounded-circle me-2" />
+                                <img src="@(item.Emisor.Avatar)?v=@(rnd.Next())" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
                                 @item.Emisor.Nombre @item.Emisor.Apellido
                             </td>
                             <td>
-                                <img src="@item.Receptor.Avatar" width="30" height="30" class="rounded-circle me-2" />
+                                <img src="@(item.Receptor.Avatar)?v=@(rnd.Next())" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
                                 @item.Receptor.Nombre @item.Receptor.Apellido
                             </td>
                             <td>
@@ -137,7 +137,7 @@
                 <div class="card h-100">
                     <div class="card-header bg-primary text-white">
                         <h4 class="mb-0">
-                            <img :src="intercambioActual.emisor.avatar" width="30" height="30" class="rounded-circle me-2" />
+                            <img :src="intercambioActual.emisor.avatar + '?v=' + new Date().getTime()" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
                             Cartas ofrecidas
                         </h4>
                     </div>
@@ -162,7 +162,7 @@
                 <div class="card h-100">
                     <div class="card-header bg-primary text-white">
                         <h4 class="mb-0">
-                            <img :src="intercambioActual.receptor.avatar" width="30" height="30" class="rounded-circle me-2" />
+                            <img :src="intercambioActual.receptor.avatar + '?v=' + new Date().getTime()" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
                             Cartas solicitadas
                         </h4>
                     </div>
@@ -337,7 +337,7 @@
                         return;
                     }
 
-                    // Format fecha to match yyyy-MM-ddTHH:mm:ss without UTC conversion
+                    
                     const date = new Date(this.intercambioActual.fecha);
                     const formattedFecha = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}T${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}:${String(date.getSeconds()).padStart(2, '0')}`;
                    

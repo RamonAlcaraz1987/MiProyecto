@@ -63,8 +63,7 @@
                 @if (!string.IsNullOrEmpty(Model.Avatar))
                 {
                     <div class="avatar-container">
-                        <img src="@Model.Avatar.Replace("\\", "/")" style="max-width: 200px; max-height: 200px;" class="img-thumbnail" id="avatarPreview" />
-                        <div class="mt-2 form-check">
+                            <img src="@Model.Avatar.Replace("\\", "/")?v=@DateTime.Now.Ticks" style="max-width: 200px; max-height: 200px;" class="img-thumbnail" id="avatarPreview" />                        <div class="mt-2 form-check">
                             <input class="form-check-input" type="checkbox" id="eliminarAvatar" name="EliminarAvatar" value="true">
                             <label class="form-check-label" for="eliminarAvatar">
                                 Eliminar avatar actual

@@ -12,7 +12,7 @@
     var coleccionesPublicasJson = System.Text.Json.JsonSerializer.Serialize(coleccionesPublicas, jsonOptions);
 }
 
-<form id="intercambioForm" asp-antiforgery="true" v-on:submit.prevent>
+<div id="intercambioForm">
     <div class="container" id="appVue" v-cloak>
         <h2 class="text-center mb-4">Crear Intercambio</h2>
 
@@ -129,6 +129,7 @@
                                     <img :src="carta.imagen" class="card-img-top" alt="Carta">
                                     <div class="card-body p-1 text-center">
                                         <small class="card-text">{{ carta.nombre }}</small>
+                                        <small class="d-block text-muted">{{ carta.cantidadDisponible }} disponibles</small>
                                         <div v-if="cartaSeleccionadaReceptor(carta.idCarta)" class="mt-1">
                                             <button class="btn btn-sm btn-danger" @@click.stop="disminuirCantidadReceptor(carta)">
                                                 <i class="fas fa-minus"></i>
@@ -172,7 +173,7 @@
             </div>
         </div>
     </div>
-</form>
+</div>
 
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
@@ -206,10 +207,8 @@
                 },
                 methods: {
                     cargarCartasEmisor() {
-                        
                         if (!this.coleccionPropia || !this.coleccionPropia.idColeccion) {
                             this.errorMessage = "Error: Colección propia no disponible";
-                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -235,13 +234,10 @@
                                   return acc;
                               }, [])
                             : [];
-                        
                     },
                     cargarCartasReceptor() {
-                        
                         if (!this.idColeccionReceptor || this.idColeccionReceptor <= 0) {
                             this.errorMessage = "Error: ID de colección receptora no válido";
-                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -255,11 +251,9 @@
                             url: `/Intercambio/ObtenerCartasColeccion?idColeccion=${this.idColeccionReceptor}`,
                             method: 'GET'
                         }).done((data) => {
-                            
                             if (data.success) {
                                 this.cartasReceptorDisponibles = data.cartas;
                                 this.coleccionReceptor = this.coleccionesPublicas.find(c => c.idColeccion == this.idColeccionReceptor);
-                                
                             } else {
                                 this.errorMessage = data.message || "Error al cargar las cartas";
                                 console.error("Server error:", this.errorMessage);
@@ -284,7 +278,6 @@
                         });
                     },
                     toggleCartaEmisor(carta) {
-                        
                         if (this.cartaSeleccionadaEmisor(carta.idCarta)) {
                             this.quitarCartaEmisor(carta.idCarta);
                         } else {
@@ -292,12 +285,10 @@
                         }
                     },
                     agregarCartaEmisor(carta) {
-                        
                         const existente = this.cartasEmisorSeleccionadas.find(c => c.idCarta === carta.idCarta);
                         if (existente) {
                             if (existente.cantidad < this.getCantidadDisponibleEmisor(carta.idCarta)) {
                                 existente.cantidad++;
-                                
                             }
                         } else {
                             this.cartasEmisorSeleccionadas.push({
@@ -307,32 +298,25 @@
                                 valorEstimado: carta.valorEstimado,
                                 cantidad: 1
                             });
-                            
                         }
                     },
                     quitarCartaEmisor(idCarta) {
-                        
                         const index = this.cartasEmisorSeleccionadas.findIndex(c => c.idCarta === idCarta);
                         if (index !== -1) {
                             this.cartasEmisorSeleccionadas.splice(index, 1);
-                            
                         }
                     },
                     aumentarCantidadEmisor(carta) {
-                        
                         const existente = this.cartasEmisorSeleccionadas.find(c => c.idCarta === carta.idCarta);
                         if (existente && existente.cantidad < this.getCantidadDisponibleEmisor(carta.idCarta)) {
                             existente.cantidad++;
-                            
                         }
                     },
                     disminuirCantidadEmisor(carta) {
-                        
                         const existente = this.cartasEmisorSeleccionadas.find(c => c.idCarta === carta.idCarta);
                         if (existente) {
                             if (existente.cantidad > 1) {
                                 existente.cantidad--;
-                                
                             } else {
                                 this.quitarCartaEmisor(carta.idCarta);
                             }
@@ -350,7 +334,6 @@
                         return this.cartasEmisorSeleccionadas.some(c => c.idCarta === idCarta);
                     },
                     toggleCartaReceptor(carta) {
-                        
                         if (this.cartaSeleccionadaReceptor(carta.idCarta)) {
                             this.quitarCartaReceptor(carta.idCarta);
                         } else {
@@ -358,12 +341,10 @@
                         }
                     },
                     agregarCartaReceptor(carta) {
-                        
                         const existente = this.cartasReceptorSeleccionadas.find(c => c.idCarta === carta.idCarta);
                         if (existente) {
                             if (existente.cantidad < this.getCantidadDisponibleReceptor(carta.idCarta)) {
                                 existente.cantidad++;
-                                
                             }
                         } else {
                             this.cartasReceptorSeleccionadas.push({
@@ -373,32 +354,25 @@
                                 valorEstimado: carta.valorEstimado,
                                 cantidad: 1
                             });
-                            
                         }
                     },
                     quitarCartaReceptor(idCarta) {
-                       
                         const index = this.cartasReceptorSeleccionadas.findIndex(c => c.idCarta === idCarta);
                         if (index !== -1) {
                             this.cartasReceptorSeleccionadas.splice(index, 1);
-                            
                         }
                     },
                     aumentarCantidadReceptor(carta) {
-                        
                         const existente = this.cartasReceptorSeleccionadas.find(c => c.idCarta === carta.idCarta);
                         if (existente && existente.cantidad < this.getCantidadDisponibleReceptor(carta.idCarta)) {
                             existente.cantidad++;
-                            
                         }
                     },
                     disminuirCantidadReceptor(carta) {
-                        
                         const existente = this.cartasReceptorSeleccionadas.find(c => c.idCarta === carta.idCarta);
                         if (existente) {
                             if (existente.cantidad > 1) {
                                 existente.cantidad--;
-                                
                             } else {
                                 this.quitarCartaReceptor(carta.idCarta);
                             }
@@ -416,10 +390,8 @@
                         return this.cartasReceptorSeleccionadas.some(c => c.idCarta === idCarta);
                     },
                     enviarIntercambio() {
-                        
                         if (!this.puedeEnviar) {
                             this.errorMessage = "Selecciona al menos una carta de cada lado y verifica las colecciones";
-                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -431,8 +403,6 @@
                         this.cargando = true;
                         this.errorMessage = null;
                         this.successMessage = null;
-
-                     
 
                         const intercambio = {
                             IdColeccionEmisor: this.coleccionPropia ? this.coleccionPropia.idColeccion : 0,
@@ -447,10 +417,8 @@
                             }))
                         };
 
-                        
                         if (!intercambio.IdColeccionEmisor || !intercambio.IdColeccionReceptor) {
                             this.errorMessage = "Error: IDs de colección no válidos";
-                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -462,7 +430,6 @@
                         }
                         if (!intercambio.CartasEmisor.length || !intercambio.CartasReceptor.length) {
                             this.errorMessage = "Error: No se seleccionaron cartas";
-                            
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -473,10 +440,9 @@
                             return;
                         }
 
-                        const token = $('#intercambioForm input[name="__RequestVerificationToken"]').val();
+                        const token = $('input[name="__RequestVerificationToken"]').val();
                         if (!token) {
                             this.errorMessage = "Error: Token de verificación no encontrado";
-                            ;
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Error',
@@ -486,7 +452,6 @@
                             this.cargando = false;
                             return;
                         }
-                        
 
                         $.ajax({
                             url: '/Intercambio/Create',
@@ -498,7 +463,6 @@
                             data: JSON.stringify(intercambio),
                             cache: false
                         }).done((data) => {
-                            
                             if (data.success) {
                                 this.successMessage = data.message || "Intercambio creado exitosamente";
                                 Swal.fire({
@@ -507,7 +471,6 @@
                                     text: this.successMessage,
                                     confirmButtonText: 'OK'
                                 }).then(() => {
-                                    
                                     setTimeout(() => {
                                         window.location.href = '/Intercambio/IntercambioPendiente';
                                     }, 1500);
@@ -567,7 +530,6 @@
                     }
                 },
                 mounted() {
-                    
                     this.cargarCartasEmisor();
                     this.cargarCartasReceptor();
                 }

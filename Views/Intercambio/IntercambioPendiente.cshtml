@@ -39,7 +39,7 @@
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">
-                        <img src="@Model.Emisor.Avatar" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
+                        <img src="@(Model.Emisor.Avatar)?v=@(rnd.Next())" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
                         @Model.ColeccionEmisor.Nombre
                     </h4>
                 </div>
@@ -93,7 +93,7 @@
             <div class="card">
                 <div class="card-header bg-primary text-white">
                     <h4 class="mb-0">
-                        <img src="@Model.Receptor.Avatar" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
+                        <img src="@(Model.Receptor.Avatar)?v=@(rnd.Next())" width="30" height="30" class="rounded-circle me-2" alt="Avatar" />
                         @Model.ColeccionReceptor.Nombre
                     </h4>
                 </div>

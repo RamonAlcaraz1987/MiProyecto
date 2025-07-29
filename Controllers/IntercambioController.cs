@@ -131,7 +131,7 @@ namespace MiProyecto.Controllers
                 intercambio = new
                 {
                     idIntercambio = intercambio.IdIntercambio,
-                    fecha = intercambio.Fecha.ToString("yyyy-MM-ddTHH:mm") // Format for datetime-local
+                    fecha = intercambio.Fecha.ToString("yyyy-MM-ddTHH:mm") 
                 }
             });
         }
@@ -230,7 +230,7 @@ namespace MiProyecto.Controllers
                 coleccionesPublicas.Add(coleccionReceptor);
             }
 
-            // Ensure Cartas is initialized
+            
             coleccionPropia.Cartas = coleccionPropia.Cartas ?? new List<Carta>();
             foreach (var col in coleccionesPublicas)
             {
